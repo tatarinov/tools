@@ -8,6 +8,7 @@ fi
 
 
 #права на папки
+chmod 775 ..
 find . -type d -exec chmod 775 "{}" \;
 #права все файлы папки
 find . -type f -exec chmod 664 "{}" \;
