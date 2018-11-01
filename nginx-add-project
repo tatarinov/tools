@@ -13,7 +13,7 @@ configFile="/var/www/laradock/nginx/sites/$1.conf"
 
 if [ -e "$configFile" ]
 then
-   echo "Config $configFile alredy exist"
+   echo "Config $configFile alredy exists"
    exit 1
 fi
 

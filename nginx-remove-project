@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+if [ !  -n "$1" ]
+then
+  echo "error: Parameter prject_name not found"  
+  echo -e "Usage: nginx-remove-project [PROJECT_NAME]"
+  exit 1
+fi
+
+configFile="/var/www/laradock/nginx/sites/$1.conf"
+
+if [ ! -e "$configFile" ]
+then
+   echo "Config $configFile do not exists"
+   exit 1
+fi
+
+
+
+read -p "Delete config \"$1\"(y/n)?"
+ 
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+   exit
+fi
+
+logPath="/var/www/laradock/logs/nginx/$1"
+
+
+rm -rf $logPath
+rm $configFile
+
+
+cd /var/www/laradock
+docker-compose restart nginx
+
+echo "success deleted"
+
