@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+if [ !  -n "$1" ]
+then
+  echo "error: Parameter prject_name not found"
+  #echo -e "Usage: nginx-add-project [OPTIONS] [PROJECT_NAME]\n\nOptions:\n   -s, --share   Create project shred on PROJECT_NAME.d.shogo-test.ru"
+  echo -e "Usage: nginx-add-project [PROJECT_NAME]"
+  exit 1
+fi
+
+templateConfigFile="/var/www/laradock/nginx/template_argilla.conf.example"
+configFile="/var/www/laradock/nginx/sites/$1.conf"
+
+if [ -e "$configFile" ]
+then
+   echo "Config $configFile alredy exist"
+   exit 1
+fi
+
+logPath="/var/www/laradock/logs/nginx/$1"
+
+mkdir $logPath
+chmod 777 $logPath
+
+sed "s/project_name/$1/" $templateConfigFile > $configFile
+
+cd /var/www/laradock
+docker-compose restart nginx
+
+echo "complited"
+

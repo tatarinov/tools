@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ -z "$1" ] 
+then
+ echo "dc start|stop"
+ exit 0
+fi
+
+if [ "$1" != "start" -a "$1" != "stop" ]
+then
+ echo "dc start|stop"
+ exit 0
+fi
+
+if mount | grep /home/dev/docker/www/ > /dev/null
+then
+  echo "уже примонтирован /home/dev/docker/www/"
+else
+  sudo mount --bind /home/dev/work/local/ /home/dev/docker/www/
+fi
+
+
+if [ "$1" = "start" ] 
+then
+ cd /home/dev/docker/nginx-php-mysql && docker-compose start
+fi
+
+if [ "$1" = "stop" ] 
+then
+ cd /home/dev/docker/nginx-php-mysql && docker-compose stop
+fi

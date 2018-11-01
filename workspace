@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+cd /var/www/laradock
+
+if [ -z "$1" ]
+ then
+  docker-compose exec --user=laradock workspace bash
+elif [ $1 = "-d" ]
+ then
+  docker-compose exec --user=laradock -e REMOTE_ADDR="${SSH_CONNECTION%% *}" workspace bash
+else 
+  echo "Unknown parameter $1"
+fi
+
