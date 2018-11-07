@@ -2,7 +2,7 @@
 
 if [ !  -n "$1" ]
 then
-  echo "error: Parameter prject_name not found"  
+  echo "error: Parameter project_name not found"  
   echo -e "Usage: nginx-remove-project [PROJECT_NAME]"
   exit 1
 fi
