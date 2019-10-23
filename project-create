@@ -27,7 +27,8 @@ git clone git@git.shogo.ru:shogo/argilla.git .
 #configure project
 configTemplate="protected/config/.env.example"
 configFile="protected/config/.env"
-sed -e "s/project_name/$1/" -e "s/APP_DEBUG=false/APP_DEBUG=true/" -e "s/APP_ENV=prod/APP_ENV=dev/" -e "s/DB_HOST=localhost/DB_HOST=mysql/" $configTemplate > $configFile
+salt=`echo -n $(($(date +%s%N)/1000000)) | md5sum | awk '{print $1}'`
+sed -e "s/project_name/$1/" -e "s/APP_DEBUG=false/APP_DEBUG=true/" -e "s/APP_ENV=prod/APP_ENV=dev/" -e "s/DB_HOST=localhost/DB_HOST=mysql/"  -e "s/APP_SALT=/APP_SALT=$salt/" $configTemplate > $configFile
 
 #createDBCommand="CREATE DATABASE \\`$projectName\\` CHARACTER SET utf8 COLLATE utf8_general_ci;"
 #GRANT ALL ON `$projectName`.* TO `username`@localhost IDENTIFIED BY 'password';

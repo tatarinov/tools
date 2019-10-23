@@ -1,0 +1,4 @@
+PROD_USER=
+PROD_SERVER=
+PROD_PROJECT_PATH=""
+PROD_OTHER_COMMANDS="/opt/php71/bin/php -f '$PROD_PROJECT_PATH/protected/yiic.php' migrate up --interactive=0;/opt/php71/bin/php -f '$PROD_PROJECT_PATH/protected/yiic.php' cache clear"
