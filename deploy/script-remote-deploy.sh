@@ -17,14 +17,19 @@ else
 fi;
 
 cd "$PROJECT_PATH"
-git pull origin "$BRANCH:$BRANCH"
 
-#protected/yiic migrate up
-#protected/yiic cache clear
+CURRENT_BRANCH="$(git branch | grep \* | cut -c 3-)"
+
+if [ "$CURRENT_BRANCH" = "$BRANCH" ]
+then
+  git pull origin "$BRANCH:$BRANCH"
+else
+  git fetch origin "$BRANCH:$BRANCH"
+  git checkout "$BRANCH"
+fi
 
 # Оther commands list (example: 'command 1 ; command 2')
 if [ -n "$3" ]
 then
  eval "$3"
 fi;
-

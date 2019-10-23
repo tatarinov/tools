@@ -1,38 +1,79 @@
 #!/bin/bash
 
-# проверяем файл конфига
-
-# проверяем что вертка масте, если нет запускаем диалог
+MODE=""
+FORCE=0
 BRANCH=master
 FILE_CONFIG="$PWD/.deploy"
+SSH_HOST=""
 
+# Read config
 if [ -f "$FILE_CONFIG" ]
 then
   source "$FILE_CONFIG"
 else
   echo "Config file $FILE_CONFIG not found"
-  echo "File variable PROD_USER"
-  echo "File variable PROD_SERVER"
-  echo "File variable PROD_PROJECT_PATH"
-  echo "File variable PROD_OTHER_COMMANDS"
+  echo "Production server variables PROD_SSH_HOST or (PROD_USER, PROD_SERVER), PROD_PROJECT_PATH, PROD_OTHER_COMMANDS"
+  echo "Test server variables TEST_SSH_HOST or (TEST_USER, TEST_SERVER), TEST_PROJECT_PATH, TEST_OTHER_COMMANDS"
+  echo "ssh connction use SSH_HOST form .ssh/config or USER@SERVER"
   exit 1
 fi;
 
-if [ "$1" = "-p" ]
+# Parse params
+while [ -n "$1" ]
+do
+case "$1" in
+-p) MODE="prod";;
+-t) MODE="test";;
+-f) FORCE=1;;
+-b) BRANCH="$2"
+echo "Deploy branch $BRANCH"
+shift ;;
+--) shift
+break ;;
+*) echo "$1 is not an option"
+exit 1
+;;
+esac
+shift
+done
+count=1
+for param in "$@"
+do
+count=$(( $count + 1 ))
+done
+
+if [ "$MODE" = "prod" ]
 then
+  SSH_HOST=$PROD_SSH_HOST
   USER=$PROD_USER
   SERVER=$PROD_SERVER
+  PROJECT_PATH="$PROD_PROJECT_PATH"
+  OTHER_COMMANDS="$PROD_OTHER_COMMANDS"
+elif [ "$MODE" = "test" ]
+then
+  SSH_HOST=$TEST_SSH_HOST
+  USER=$TEST_USER
+  SERVER=$TEST_SERVER
+  PROJECT_PATH="$TEST_PROJECT_PATH"
+  OTHER_COMMANDS="$TEST_OTHER_COMMANDS"
 else
-  echo "exmple: deploy -p|-t [-f]"
+  echo "exmple: deploy -p|-t [-f] [-b baranchName]"
   echo "-p deploy on production server"
   echo "-t deploy on test server"
   echo "-f force wthout confirm"
+  echo "-b branch name, default 'master'"
   exit 1
 fi
 
-echo "Deploing by ssh to $USER@$SERVER"
+if [ "$SSH_HOST" = "" ]
+then
+  $SSH_HOST = "$USER@$SERVER"
 
-if [ ! "$2" = "-f" ]
+fi
+
+echo "Deploing by ssh to $SSH_HOST, branch $BRANCH"
+
+if [ "$FORCE" = 0 ]
 then
   read -r -p "Are you sure? [y/N] " response
   case "$response" in
@@ -47,4 +88,4 @@ fi
 
 git push origin "$BRANCH:$BRANCH"
 
-ssh "$USER@$SERVER" 'bash -s' -- < /usr/local/bin/script-remote-deploy.sh "$BRANCH" "$PROD_PROJECT_PATH" "$PROD_OTHER_COMMANDS"
+ssh "$SSH_HOST" 'bash -s' -- < /usr/local/bin/script-remote-deploy.sh "$BRANCH" "$PROJECT_PATH" "$OTHER_COMMANDS"
