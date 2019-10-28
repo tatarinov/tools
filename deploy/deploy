@@ -1,91 +1,144 @@
 #!/bin/bash
 
-MODE=""
 FORCE=0
 BRANCH=master
 FILE_CONFIG="$PWD/.deploy"
-SSH_HOST=""
 
-# Read config
+function confirm {
+  echo "Deploing by ssh to $SSH_HOST, branch $BRANCH"
+
+  if [ "$FORCE" = 0 ]; then
+    read -r -p "Are you sure? [y/N] " response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+    #        do_something
+            ;;
+        *)
+            exit 0
+            ;;
+    esac
+  fi
+}
+
+function eval_local_commands {
+  #Replace template commands
+  LOCAL_COMMANDS="${LOCAL_COMMANDS//;git-push/git push origin $BRANCH:$BRANCH}"
+  LOCAL_COMMANDS="${LOCAL_COMMANDS//git-push;/git push origin $BRANCH:$BRANCH}"
+  LOCAL_COMMANDS="${LOCAL_COMMANDS//git-push/git push origin $BRANCH:$BRANCH}"
+
+  #LOCAL_COMMANDS="${LOCAL_COMMANDS//\$PWD/$PWD}"
+
+  if [ ! "$LOCAL_COMMANDS" = "" ]; then
+   echo "Executing local commands..."
+   eval $LOCAL_COMMANDS
+  fi
+}
+
+function eval_remote_commands {
+  #encode for transfer as arguments but shell command
+  if [[ $REMOTE_COMMANDS != "" ]]; then
+   REMOTE_COMMANDS=`echo  $REMOTE_COMMANDS | base64 | tr '\n\r' '@'`
+  fi
+
+  #echo -e ${REMOTE_COMMANDS}
+ 
+  ssh < /usr/local/bin/script-remote-deploy.sh $SSH_HOST "bash -s -l -- $BRANCH $PROJECT_PATH $REMOTE_COMMANDS" 
+}
+
+
+HELP_CONFIG="Config file $FILE_CONFIG not found
+Production server variables: 
+PROD_SSH_HOST 
+PROD_PROJECT_PATH
+PROD_LOCAL_COMMANDS
+PROD_REMOTE_COMMANDS
+"
+
+#Read config
 if [ -f "$FILE_CONFIG" ]
 then
   source "$FILE_CONFIG"
 else
-  echo "Config file $FILE_CONFIG not found"
-  echo "Production server variables PROD_SSH_HOST or (PROD_USER, PROD_SERVER), PROD_PROJECT_PATH, PROD_OTHER_COMMANDS"
-  echo "Test server variables TEST_SSH_HOST or (TEST_USER, TEST_SERVER), TEST_PROJECT_PATH, TEST_OTHER_COMMANDS"
-  echo "ssh connction use SSH_HOST form .ssh/config or USER@SERVER"
+  echo -e "${HELP_CONFIG}"
   exit 1
 fi;
+
+#Extract main params from config 
+MAIN_PARAMS=`cat $FILE_CONFIG | egrep '^[A-Z0-9]+\_' | sed 's/_.*$//g;s/\(.*\)/\L\1/' | uniq | paste -sd '|' -`
+
+if [ "$MAIN_PARAMS" = "" ]
+then
+  echo "Bad config"
+  exit
+fi
+
+HELP="example: deploy $MAIN_PARAMS [options]
+options:
+ -f force wthout confirm
+ -b branch name, default 'master'"
+
+REGEX_MAIN_PARAMS="^($MAIN_PARAMS)$"
+if [[ ! "$1" =~ $REGEX_MAIN_PARAMS ]]; then
+  echo -e "${HELP}"
+  exit 1
+else
+ # prod | test | ...
+ SECTION_PREFIX=`echo $1 | tr a-z A-Z`
+fi
+
+#delete first args
+shift
 
 # Parse params
 while [ -n "$1" ]
 do
-case "$1" in
--p) MODE="prod";;
--t) MODE="test";;
--f) FORCE=1;;
--b) BRANCH="$2"
-echo "Deploy branch $BRANCH"
-shift ;;
---) shift
-break ;;
-*) echo "$1 is not an option"
-exit 1
-;;
-esac
+  case "$1" in
+  -f) FORCE=1;;
+  -b) BRANCH="$2"
+    echo "Deploy branch $BRANCH"
+    shift ;;
+  --) shift
+  break ;;
+  *) 
+    echo "$1 is not an option"
+    echo -e "${HELP}"
+    exit 1
+  ;;
+  esac
 shift
 done
-count=1
-for param in "$@"
-do
-count=$(( $count + 1 ))
-done
 
-if [ "$MODE" = "prod" ]
-then
-  SSH_HOST=$PROD_SSH_HOST
-  USER=$PROD_USER
-  SERVER=$PROD_SERVER
-  PROJECT_PATH="$PROD_PROJECT_PATH"
-  OTHER_COMMANDS="$PROD_OTHER_COMMANDS"
-elif [ "$MODE" = "test" ]
-then
-  SSH_HOST=$TEST_SSH_HOST
-  USER=$TEST_USER
-  SERVER=$TEST_SERVER
-  PROJECT_PATH="$TEST_PROJECT_PATH"
-  OTHER_COMMANDS="$TEST_OTHER_COMMANDS"
-else
-  echo "exmple: deploy -p|-t [-f] [-b baranchName]"
-  echo "-p deploy on production server"
-  echo "-t deploy on test server"
-  echo "-f force wthout confirm"
-  echo "-b branch name, default 'master'"
-  exit 1
+# main code
+
+eval SSH_HOST=\$${SECTION_PREFIX}_SSH_HOST
+
+confirm
+
+eval PROJECT_PATH=\$${SECTION_PREFIX}_PROJECT_PATH
+eval REMOTE_COMMANDS=\$${SECTION_PREFIX}_REMOTE_COMMANDS
+
+eval LOCAL_COMMANDS=\$${SECTION_PREFIX}_LOCAL_COMMANDS
+if [ ! -z "$LOCAL_COMMANDS" ]; then
+ eval_local_commands
 fi
 
-if [ "$SSH_HOST" = "" ]
-then
-  $SSH_HOST = "$USER@$SERVER"
+if [ ! -z "$REMOTE_COMMANDS" ]; then
 
+  if [ -z "$SSH_HOST" ]; then
+   echo "Don't set variable \$${SECTION_PREFIX}_SSH_HOST"
+   exit 1
+  fi
+
+  if [ -z "$PROJECT_PATH" ]; then
+   echo "Don't set variable \$${SECTION_PREFIX}_PROJECT_PATH"
+   exit 1
+  fi
+
+ eval_remote_commands
+
+
+  eval LOCAL_COMMANDS=\$${SECTION_PREFIX}_LOCAL_AFTER_COMMANDS
+  if [ ! -z "$LOCAL_COMMANDS" ]; then
+    eval_local_commands
+  fi
 fi
-
-echo "Deploing by ssh to $SSH_HOST, branch $BRANCH"
-
-if [ "$FORCE" = 0 ]
-then
-  read -r -p "Are you sure? [y/N] " response
-  case "$response" in
-      [yY][eE][sS]|[yY]) 
-  #        do_something
-          ;;
-      *)
-          exit 0
-          ;;
-  esac
-fi
-
-git push origin "$BRANCH:$BRANCH"
-
-ssh "$SSH_HOST" 'bash -s' -- < /usr/local/bin/script-remote-deploy.sh "$BRANCH" "$PROJECT_PATH" "$OTHER_COMMANDS"

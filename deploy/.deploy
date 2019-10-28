@@ -1,7 +1,79 @@
-PROD_USER=
-PROD_SERVER=
-PROD_PROJECT_PATH=""
-PROD_OTHER_COMMANDS="/opt/php71/bin/php -f '$PROD_PROJECT_PATH/protected/yiic.php' migrate up --interactive=0;/opt/php71/bin/php -f '$PROD_PROJECT_PATH/protected/yiic.php' cache clear"
-TEST_SSH_HOST=dev2sync
-TEST_PROJECT_PATH="/var/www/test"
-TEST_OTHER_COMMANDS="pwd;docker exec laradock_workspace_1  bash -c 'cd /var/www/test;protected/yiic migrate up --interactive=0;protected/yiic cache clear'"
+################################
+# DOC
+################################
+# ; - commands delimiter
+# $PWD - current directory
+# Template commands:
+# local:
+#   git-push => git push origin $BRANCH:$BRANCH
+# remote:
+#   git-pull => git fetch origin $BRANCH:$BRANCH; git checkout $BRANCH
+# Samples:
+#  protected/yiic migrate up --interactive=0  - execute migrations without confirm
+#  docker exec -w $PWD -u laradock -it laradock_workspace_1 bash -c -l 'command1;command2' - run commands in docker container
+# VARIABLES:
+#  (PREFIX_)_SSH_HOST - ssh host fom config OR user@host
+#  (PREFIX_)_PROJECT_PATH - remote project path
+#  (PREFIX_)_REMOTE_COMMANDS  - command list for remote executing, e before (PREFIX_)_LOCAL_COMMANDS
+#
+#  (PREFIX_)_LOCAL_COMMANDS  - command list execute before (PREFIX_)_REMOTE_COMMANDS
+#  (PREFIX_)_LOCAL_AFTER_COMMANDS - command list execute after (PREFIX_)_REMOTE_COMMANDS
+################################
+
+################################
+# PROD
+################################
+PROD_SSH_HOST="server"
+PROD_PROJECT_PATH="/var/www/server"
+PROD_LOCAL_COMMANDS="git-push"
+PROD_REMOTE_COMMANDS="git-pull;
+protected/yiic migrate up --interactive=0;
+protected/yiic cache clear;
+protected/yiic es indexFacet;
+protected/yiic es indexSearch;
+git log -n 1"
+
+################################
+# TEST
+################################
+TEST_SSH_HOST="server"
+TEST_PROJECT_PATH="/var/www/server"
+TEST_LOCAL_COMMANDS="git-push"
+TEST_REMOTE_COMMANDS="git-pull;
+docker exec -w $PWD -u laradock -it laradock_workspace_1 bash -c -l  'protected/yiic migrate up --interactive=0;protected/yiic cache clear';
+git log -n 1"
+
+################################
+# RDUMP
+################################
+RDUMP_SSH_HOST="server"
+RDUMP_PROJECT_PATH="/var/www/server"
+RDUMP_REMOTE_COMMANDS="protected/yiic db dump --file=.sql/remote_dump.sql;
+ls -lah .sql/remote_dump.sql;
+tar -czvf .sql/remote_dump.sql.tar.gz .sql/remote_dump.sql;"
+RDUMP_LOCAL_AFTER_COMMANDS="scp $RDUMP_SSH_HOST:$RDUMP_PROJECT_PATH/.sql/remote_dump.sql.tar.gz .sql/remote_dump.sql.tar.gz;
+tar -xzvf .sql/remote_dump.sql.tar.gz;
+docker exec -w $PWD -u laradock -it laradock_workspace_1 bash -c -l  'protected/yiic db restore --file=.sql/remote_dump.sql;protected/yiic rbac reset'"
+
+################################
+# RDUMPOLD
+################################
+RDUMPOLD_SSH_HOST="server" 
+RDUMPOLD_PROJECT_PATH="/var/www/server" 
+RDUMPOLD_REMOTE_COMMANDS="rm .sql/remote_dump.sql;
+phing createDump -DdumpFileName=remote_dump.sql;
+ls -lah .sql/remote_dump.sql;
+tar -czvf .sql/remote_dump.sql.tar.gz .sql/remote_dump.sql" 
+RDUMPOLD_LOCAL_COMMANDS="scp $RDUMPOLD_SSH_HOST:$RDUMPOLD_PROJECT_PATH/.sql/remote_dump.sql.tar.gz .sql;
+tar -xzvf .sql/remote_dump.sql.tar.gz;
+docker exec -w $PWD -u laradock -it laradock_workspace_1 bash -c -l  '/home/laradock/.composer/vendor/phing/phing/bin/phing applyDump -Dforce -DdumpFileName=remote_dump.sql'" 
+
+################################
+# DBUPLOAD
+################################
+DBUPLOAD_SSH_HOST="server"
+DBUPLOAD_PROJECT_PATH="/var/www/server"
+DBUPLOAD_LOCAL_COMMANDS="protected/yiic db dump --file=.sql/local_dump.sql;
+tar -czvf .sql/local_dump.sql.tar.gz .sql/local_dump.sql;
+scp $PWD/.sql/local_dump.sql.tar.gz $DBUPLOAD_SSH_HOST:$RDUMP_PROJECT_PATH/.sql/"
+DBUPLOAD_REMOTE_COMMANDS="tar -xzvf .sql/local_dump.sql.tar.gz;protected/yiic db restore --file=.sql/local_dump.sql;"
