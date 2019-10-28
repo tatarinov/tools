@@ -14,7 +14,7 @@
 # VARIABLES:
 #  (PREFIX_)_SSH_HOST - ssh host fom config OR user@host
 #  (PREFIX_)_PROJECT_PATH - remote project path
-#  (PREFIX_)_REMOTE_COMMANDS  - command list for remote executing, e before (PREFIX_)_LOCAL_COMMANDS
+#  (PREFIX_)_REMOTE_COMMANDS  - command list for remote executing, before (PREFIX_)_LOCAL_COMMANDS
 #
 #  (PREFIX_)_LOCAL_COMMANDS  - command list execute before (PREFIX_)_REMOTE_COMMANDS
 #  (PREFIX_)_LOCAL_AFTER_COMMANDS - command list execute after (PREFIX_)_REMOTE_COMMANDS

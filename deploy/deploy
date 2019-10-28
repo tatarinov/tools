@@ -94,9 +94,12 @@ while [ -n "$1" ]
 do
   case "$1" in
   -f) FORCE=1;;
-  -b) BRANCH="$2"
-    echo "Deploy branch $BRANCH"
-    shift ;;
+  -b)
+     if [ -n "$2" ]; then
+       BRANCH="$2"
+     fi
+     echo "Deploy branch $BRANCH"
+     shift ;;
   --) shift
   break ;;
   *) 
