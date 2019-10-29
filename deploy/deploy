@@ -75,7 +75,9 @@ fi
 HELP="example: deploy $MAIN_PARAMS [options]
 options:
  -f force wthout confirm
- -b branch name, default 'master'"
+ -b branch name, default 'master'
+ -c remote custom command
+    example: deploy prod -c 'ls -la;pwd'"
 
 REGEX_MAIN_PARAMS="^($MAIN_PARAMS)$"
 if [[ ! "$1" =~ $REGEX_MAIN_PARAMS ]]; then
@@ -100,6 +102,15 @@ do
      fi
      echo "Deploy branch $BRANCH"
      shift ;;
+  -c) 
+     shift
+     if [ -n "$1" ]; then
+       CUSTOM_COMMAND="$1"
+     else
+	echo "Command is empty"
+	exit 1
+     fi    
+     ;;
   --) shift
   break ;;
   *) 
@@ -114,11 +125,16 @@ done
 # main code
 
 eval SSH_HOST=\$${SECTION_PREFIX}_SSH_HOST
-
-confirm
-
 eval PROJECT_PATH=\$${SECTION_PREFIX}_PROJECT_PATH
 eval REMOTE_COMMANDS=\$${SECTION_PREFIX}_REMOTE_COMMANDS
+
+if [ -n "$CUSTOM_COMMAND" ]; then
+ REMOTE_COMMANDS=$CUSTOM_COMMAND
+ eval_remote_commands
+ exit 0;
+fi
+
+confirm
 
 eval LOCAL_COMMANDS=\$${SECTION_PREFIX}_LOCAL_COMMANDS
 if [ ! -z "$LOCAL_COMMANDS" ]; then
