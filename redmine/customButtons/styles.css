@@ -7,3 +7,31 @@
   color: #ffffff;
   margin-right: 30px;
 }
+
+.to-my {
+  cursor: pointer;
+  display: inline-block;
+  padding: 5px 15px;
+  border-radius: 19px;
+  background: #00bbd1;
+  color: #ffffff;
+  margin-right: 30px;
+}
+
+.end-task {
+  cursor: pointer;
+  display: inline-block;
+  padding: 5px 15px;
+  border-radius: 19px;
+  background: #d17356;
+  color: #ffffff;
+  margin-right: 30px;
+}
+
+#my-comment-input {
+  border: solid 1px #0d6aad;
+  width: 250px;
+}
+#my-time-input {
+  border: solid 1px #0d6aad;
+}
