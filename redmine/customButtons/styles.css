@@ -1,0 +1,9 @@
+.to-test {
+  cursor: pointer;
+  display: inline-block;
+  padding: 5px 15px;
+  border-radius: 19px;
+  background: #63d195;
+  color: #ffffff;
+  margin-right: 30px;
+}

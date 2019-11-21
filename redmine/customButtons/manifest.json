@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+ 
+  "name": "RedmineCustomButtons",
+  "version": "0.1.1",
+  "description": "Add custom buttons in redmine",
+ 
+  "content_scripts": [{
+    "css": ["styles.css"],
+    "js": ["query-1.11.1-ui-1.11.0-ujs-3.1.4.js", "content.js"],
+    "matches": ["https://redmine.shogo.ru/*"]
+  }]
+
+}
